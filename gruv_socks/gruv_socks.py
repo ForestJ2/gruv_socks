@@ -157,10 +157,10 @@ class Socket(object):
         if self.__sock is None: return
 
         try: self.__sock.shutdown(SHUT_RDWR)
-        except: pass
+        except Exception: pass
         finally:
             try: self.__sock.close()
-            except: pass
+            except Exception: pass
             finally: self.__sock = None
     
     def __del__(self):
@@ -248,10 +248,10 @@ class ServerBase:
         sleep(0.2)
 
         try: self.__listener.shutdown(SHUT_RDWR)
-        except: pass
+        except Exception: pass
         finally:
             try: self.__listener.close()
-            except: pass
+            except Exception: pass
 
         self.__listener = None
 
