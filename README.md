@@ -1,3 +1,6 @@
+[![Total alerts](https://img.shields.io/lgtm/alerts/g/ForestJ2/gruv_socks.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/ForestJ2/gruv_socks/alerts/)
+[![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/ForestJ2/gruv_socks.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/ForestJ2/gruv_socks/context:python)
+
 # gruv-socks
 
 This script provides a simple to use base server class and a Socket object that abstracts away the needed work to transport and recieve messages over TCP.
