@@ -3,7 +3,7 @@ import setuptools
 
 setuptools.setup(
     name='gruv_socks',
-    version='0.9.6',
+    version='0.9.7',
     url="https://github.com/ForestJ2/gruv_socks",
     author="Forest Jacobsen",
     description="Easy to use standard for abstracting the work needed to transport and reconstruct messages over TCP.",
