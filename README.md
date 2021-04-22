@@ -30,25 +30,27 @@ This script will create a server that listens for data from clients, sends it ba
 from gruv_socks.gruv_socks import ServerBase, SOCK_ERROR, SOCK_TIMEOUT
 
 def callback(addr, sock):
-	status, data = sock.read()  # receive read status, and received data
+    status, data = sock.read()  # receive read status, and received data
 
-	# exit if read failed
-	if status is False and data == SOCK_ERROR:
-		print("client error")
-		return
-	elif status is False and data == SOCK_TIMEOUT:
-		print("client timeout")
-		return
+    # exit if read failed
+    if status is False:
+        if data == SOCK_ERROR:
+            print("client error")
 
-	sock.write(data)  # send data back to client
-	print(f"{addr[0]} said: {data.decode()}")
+        elif data == SOCK_TIMEOUT:
+            print("client timeout")
+
+        return
+
+    sock.write(data)  # send data back to client
+    print(f"{addr[0]} said: {data.decode()}")
 
 def main():
-	server = ServerBase()
-	server.start(callback, 5551, blocking=True)
+    server = ServerBase()
+    server.start(callback, 5551, blocking=True)
 
 if __name__ == "__main__":
-	main()
+    main()
 ```
 
 ### Create Echo Client
