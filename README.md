@@ -64,7 +64,6 @@ def main():
 	
 	sock.connect("localhost", 5551)
 	sock.write("Hello world!")
-	# NOTE: Socket + str/bytes [sock + "foo"] is valid shorthand for sock.write()
 
 	print(sock.read()[1])
 
