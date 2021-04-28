@@ -3,7 +3,7 @@ from select import select
 from threading import Thread
 from traceback import print_exc
 from struct import pack, unpack, error as struct_error
-from socket import socket, SHUT_RDWR, error as socket_error
+from socket import socket, SHUT_RDWR, SOL_SOCKET, SO_REUSEADDR, error as socket_error
 
 
 SOCK_ERROR = b'\x01'
@@ -34,13 +34,15 @@ class Socket(object):
     def __add__(self, x: bytes) -> bool:
         return self.write(x)
 
-    def connect(self, host: str, port: int) -> bool:
+    def connect(self, host: str, port: int, timeout: int=10) -> bool:
         """
         Attempts to establish a connection to a given host. Returns bool dictating status.
 
-        host: Hostname/Address of host to connect to.
+        host:    Hostname/Address of host to connect to.
 
-        port: Port on the given host to connect to.
+        port:    Port on the given host to connect to.
+
+        timoeut: Time (in seconds) to wait for connection to complete.
         """
 
         if self.__sock is not None:
@@ -49,10 +51,12 @@ class Socket(object):
 
         try:
             self.__sock = socket()
-            self.__sock.settimeout(self.timeout)
+            self.__sock.settimeout(timeout)  # set connection timeout
             self.__sock.connect((host, port))
+            self.__sock.settimeout(self.timeout)  # return back to original timeout
 
             return True
+
         except Exception as err:
             if self.debug: print_exc()
             print(f"[SOCKET ERROR] (Socket.connect) could not connect, reason: {err}")
@@ -79,15 +83,20 @@ class Socket(object):
         try:
             # use timeout override (if set) only upon first read
             if len(select([self.__sock], [], [], timeout)[0]) == 0:
-                return (False, b'\x00')
+                return (False, SOCK_TIMEOUT)
 
             message_length = unpack(">I", self.__sock.recv(4))[0]
 
             while data_length < message_length:
                 # creating and getting length of buffer is faster than indexing and calling len on fragments
+                if len(select([self.__sock], [], [], timeout)[0]) == 0:
+                    return (False, SOCK_TIMEOUT)
+
                 buffer = self.__sock.recv(message_length-data_length)
                 data_length += len(buffer)
                 fragments.append(buffer)
+
+            return (True, b''.join(fragments))
 
         except struct_error as err:
             if self.debug: print_exc()
@@ -103,8 +112,6 @@ class Socket(object):
             if self.debug: print_exc()
             print(f"[ERROR] (Socket.read) could not receive data, reason: {err}")
             return (False, SOCK_ERROR)
-
-        return (True, b''.join(fragments))
     
     def write(self, data: bytes or str) -> bool:
         """
@@ -149,7 +156,6 @@ class Socket(object):
 
             return False
 
-
     def disconnect(self):
         """
         Properly disconnects the socket object by shutting down READ/WRITE channels, and then closing the socket.
@@ -193,7 +199,7 @@ class ServerBase:
 
         while self.running:
             try:
-                if select([self.__listener], [], [], 0.1)[0] == []: continue
+                if len(select([self.__listener], [], [], 0.1)[0]) == 0: continue
                 sock, addr = self.__listener.accept()
 
                 t = Thread(target=callback, args=(addr, Socket(sock, debug=self.debug)))
@@ -207,7 +213,7 @@ class ServerBase:
                 if self.debug: print_exc()
                 if self.running: print(f"[ERROR] (ServerBase.__listen): {err}")
     
-    def start(self, callback, port: int, address: str="0.0.0.0", blocking: bool = False):
+    def start(self, callback, port: int, address: str="0.0.0.0", blocking: bool=False):
         """
         Makes the server listen with the given configuration.
 
@@ -228,6 +234,7 @@ class ServerBase:
             raise Exception("server is already listening")
 
         self.__listener = socket()
+        self.__listener.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         self.__listener.bind((address, port))
         self.__listener.listen()
         self.running = True
